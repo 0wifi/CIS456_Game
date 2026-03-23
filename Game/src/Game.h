@@ -31,11 +31,13 @@ public:
 
 	void on_app_closing() override;
 private:
-	std::vector<std::unique_ptr<Mage::Sprite>> _sprites;
+	std::map<std::string, std::unique_ptr<Mage::Sprite>> _sprites;
 	std::unique_ptr<SpriteRenderingSystem> _sprite_rendering_system = nullptr;
 	std::unique_ptr<MovementSystem> _movement_system = nullptr;
 	std::unique_ptr<GravitySystem>  _gravity_system  = nullptr;
 	std::unique_ptr<LifetimeSystem> _lifetime_system = nullptr;
 	std::unique_ptr<PlayerSystem> _player_system = nullptr;
 	std::unique_ptr<CollisionSystem> _collision_system = nullptr;
+
+	void add_platform(float pos_x, size_t units_wide);
 };

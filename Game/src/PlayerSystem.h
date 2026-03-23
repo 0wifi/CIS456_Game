@@ -47,6 +47,8 @@ private:
 	void update_player_velocity(RigidBody2DComponent* r, float delta_time);
 	void update_player_sprite(const RigidBody2DComponent* r, SpriteComponent* s,
 								Transform2DComponent* t, BoundingBoxComponent* b);
+	void update_camera(const RigidBody2DComponent* r, const SpriteComponent* s,
+								const Transform2DComponent* t, float delta_time);
 
 	void jump();
 	void shoot();

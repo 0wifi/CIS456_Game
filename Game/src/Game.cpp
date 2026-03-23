@@ -40,26 +40,25 @@ Game::Game() : Application("Game", false, 1024, 768, 1)
 	Rand::add_uniform_real_distribution("pos_x", 0.0f, get_camera()->right);
 	Rand::add_uniform_real_distribution("pos_y", get_camera()->top, get_camera()->top * 2);
 
-	_sprites.push_back(std::make_unique<Mage::Sprite>(
-		Mage::Color::custom(
-			Rand::get_uniform_real("color"),
-			Rand::get_uniform_real("color"),
-			Rand::get_uniform_real("color"),
-			Rand::get_uniform_real("color")
-		)));
-	auto p = get_entity_manager()->add_entity(EntityTypes::Platform);
-	get_component_manager()->add_component<SpriteComponent>(*p,
-		{
-			.sprite = _sprites.back().get()
-		});
-	get_component_manager()->add_component<Transform2DComponent>(*p,
-		{
-			.translation = {200.0f, 5.0f},
-			.scale = {400.0f, 10.0f}
-		});
-	get_component_manager()->add_component<BoundingBoxComponent>(*p,
-		{
-		});
+	Rand::add_uniform_real_distribution("platform_width", 1.0f, 7.0f);
+	Rand::add_uniform_real_distribution("platform_gap_width", 1.0f, 7.0f);
+
+	_sprites["platform_left"] = std::make_unique<Mage::Sprite>("res/sprites/platform_left.png", 1, 1.0f);
+	_sprites["platform_middle"] = std::make_unique<Mage::Sprite>("res/sprites/platform_middle.png", 1, 1.0f);
+	_sprites["platform_right"] = std::make_unique<Mage::Sprite>("res/sprites/platform_right.png", 1, 1.0f);
+	_sprites["platform_single"] = std::make_unique<Mage::Sprite>("res/sprites/platform_single.png", 1, 1.0f);
+
+	add_platform(0.0, 6);
+
+	for (size_t i = 350; i < 3000; )
+	{
+		auto pw = static_cast<size_t>(Rand::get_uniform_real("platform_width"));
+		add_platform(static_cast<float>(i), pw); 
+		i += 50 * pw;
+
+		auto gw = static_cast<size_t>(Rand::get_uniform_real("platform_gap_width"));
+		i += 50 * gw;
+	}
 
 	//MARK: confetti:)
 	/*LOG_WARN("Entity creation starting...");
@@ -106,4 +105,81 @@ Game::Game() : Application("Game", false, 1024, 768, 1)
 void Game::on_app_closing()
 {
 	close();
+}
+
+void Game::add_platform(float pos_x, size_t units_wide)
+{
+	if (units_wide < 2)
+	{
+		auto e = get_entity_manager()->add_entity(EntityTypes::Platform);
+		get_component_manager()->add_component<SpriteComponent>(*e,
+			{
+				.sprite = _sprites["platform_single"].get()
+			});
+		get_component_manager()->add_component<Transform2DComponent>(*e,
+			{
+				.translation = {pos_x, 0.0f},
+				.scale = {0.5f, 0.5f}
+			});
+		get_component_manager()->add_component<BoundingBoxComponent>(*e,
+			{
+				.center = {50.0f, 50.0f},
+				.half_size = {50.0f, 50.0f}
+			});
+		return;
+	}
+
+	auto e = get_entity_manager()->add_entity(EntityTypes::Platform);
+	get_component_manager()->add_component<SpriteComponent>(*e,
+		{
+			.sprite = _sprites["platform_left"].get()
+		});
+	get_component_manager()->add_component<Transform2DComponent>(*e,
+		{
+			.translation = {pos_x, 0.0f},
+			.scale = {0.5f, 0.5f}
+		});
+	get_component_manager()->add_component<BoundingBoxComponent>(*e,
+		{
+			.center = {50.0f, 50.0f},
+			.half_size = {50.0f, 50.0f}
+		});
+
+
+	auto middle_start = static_cast<size_t>(pos_x) + 50;
+	auto middle_end = static_cast<size_t>(pos_x) + (units_wide - 1) * 50;
+	for (size_t i = middle_start; i < middle_end; i += 50)
+	{
+		e = get_entity_manager()->add_entity(EntityTypes::Platform);
+		get_component_manager()->add_component<SpriteComponent>(*e,
+			{
+				.sprite = _sprites["platform_middle"].get()
+			});
+		get_component_manager()->add_component<Transform2DComponent>(*e,
+			{
+				.translation = {static_cast<float>(i), 0.0f},
+				.scale = {0.5f, 0.5f}
+			});
+		get_component_manager()->add_component<BoundingBoxComponent>(*e,
+			{
+				.center = {50.0f, 50.0f},
+				.half_size = {50.0f, 50.0f}
+			});
+	}
+
+	e = get_entity_manager()->add_entity(EntityTypes::Platform);
+	get_component_manager()->add_component<SpriteComponent>(*e,
+		{
+			.sprite = _sprites["platform_right"].get()
+		});
+	get_component_manager()->add_component<Transform2DComponent>(*e,
+		{
+			.translation = {static_cast<float>(middle_end), 0.0f},
+			.scale = {0.5f, 0.5f}
+		});
+	get_component_manager()->add_component<BoundingBoxComponent>(*e,
+		{
+			.center = {50.0f, 50.0f},
+			.half_size = {50.0f, 50.0f}
+		});
 }

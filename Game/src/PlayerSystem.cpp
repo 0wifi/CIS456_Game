@@ -26,6 +26,8 @@
 
 #define OFFSET_PLAYER_CENTER 24.0f
 
+#define SCROLL_MARGIN 0.33f
+
 PlayerSystem::PlayerSystem(Game* game)
 	: _game(game)
 {
@@ -47,6 +49,7 @@ void PlayerSystem::update(Mage::ComponentManager& component_manager, float delta
 
 	update_player_velocity(r, delta_time);
 	update_player_sprite(r, s, t, b);
+	update_camera(r, s, t, delta_time);
 }
 
 void PlayerSystem::initialize()
@@ -65,8 +68,11 @@ void PlayerSystem::initialize()
 		"res/sprites/hero_run_shoot.png", 7, 0.15f);
 	_player_sprites["hero_fall_shoot"] = std::make_unique<Mage::Sprite>(
 		"res/sprites/hero_fall_shoot.png", 6, 0.05f);
-	_player_sprites["bullet"] = std::make_unique<Mage::Sprite>(
+	_player_sprites["bullet_right"] = std::make_unique<Mage::Sprite>(
 		"res/sprites/bullet.png", 7, 0.05f);
+	_player_sprites["bullet_left"] = std::make_unique<Mage::Sprite>(
+		"res/sprites/bullet.png", 7, 0.05f);
+	_player_sprites["bullet_left"]->set_flip_x(true);
 
 	_player_entity = _game->get_entity_manager()->add_entity(EntityTypes::PlayerEntity);
 	_game->get_component_manager()->add_component(*_player_entity, GravityComponent{});
@@ -161,6 +167,11 @@ void PlayerSystem::update_player_velocity(RigidBody2DComponent* r, float delta_t
 
 	auto velocity_factor = 1.0f;
 
+	if (std::signbit(prior_velocity_x) != std::signbit(r->velocity.x))
+		velocity_factor = 0.1f;
+	else if (std::abs(prior_velocity_x) < 0.1f || std::abs(r->velocity.x) < 0.1f)
+		velocity_factor = 0.1f;
+
 	r->velocity.x *= VELOCITY_PLAYER * velocity_factor;
 }
 
@@ -196,6 +207,21 @@ void PlayerSystem::update_player_sprite(const RigidBody2DComponent* r, SpriteCom
 		t->translation.x += OFFSET_PLAYER_CENTER;
 
 	b->center.x = _left_facing ? BBOX_LEFT_FACING_CENTER_X_PLAYER : BBOX_RIGHT_FACING_CENTER_X_PLAYER;
+}
+
+void PlayerSystem::update_camera(const RigidBody2DComponent* r, const SpriteComponent* s, const Transform2DComponent* t, float delta_time)
+{
+	auto window_pos_x = _game->get_camera()->right - t->translation.x;
+	auto window_width = static_cast<float>(_game->get_window()->get_width());
+	auto scaled_sprite_width = static_cast<float>(s->sprite->get_width()) * t->scale.x;
+	auto scrolling_margin = window_width * SCROLL_MARGIN;
+
+	if (window_pos_x - scaled_sprite_width < scrolling_margin
+		|| window_pos_x > window_width - scrolling_margin)
+	{
+		_game->get_camera()->left += r->velocity.x * delta_time;
+		_game->get_camera()->right += r->velocity.x * delta_time;
+	}
 }
 
 void PlayerSystem::on_key_down(Mage::Key key, uint_fast16_t key_modifiers, uint_fast8_t repeat_count)
@@ -258,7 +284,7 @@ void PlayerSystem::add_bullet()
 	auto e = _game->get_entity_manager()->add_entity(EntityTypes::Bullet);
 	_game->get_component_manager()->add_component<SpriteComponent>(*e,
 		{
-			.sprite = _player_sprites["bullet"].get()
+			.sprite = _left_facing ? _player_sprites["bullet_left"].get() : _player_sprites["bullet_right"].get()
 		});
 	_game->get_component_manager()->add_component<LifetimeComponent>(*e,
 		{
