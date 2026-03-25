@@ -9,7 +9,7 @@ add_executable(
  "src/main.cpp"
  "src/Game.cpp"
  "src/PlayerSystem.cpp"
- "src/DeathByYSystem.cpp"
+ 
  "src/CollisionSystem.cpp" "src/DestructionNotificationSystem.h" "src/EnemySpawningSystem.h" "src/EnemySpawningSystem.cpp" "src/SpriteRenderingSystem.h" )
 
 set_property( TARGET "Game" PROPERTY LINKER_LANGUAGE CXX )

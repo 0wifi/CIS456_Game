@@ -7,6 +7,8 @@ namespace Mage {
 	class MAGE_API Sprite : ICopyDisable
 	{
 	public:
+		explicit Sprite(const Sprite* sprite);
+
 		explicit Sprite(const Color& color);
 
 		Sprite(const char* sprite_image_file, uint_fast32_t frames, float frame_time);

@@ -14,6 +14,8 @@ Game::Game() : Application("Game", false, 1024, 768, 1)
 	get_component_manager()->register_component<SpriteComponent>();
 	get_component_manager()->register_component<LifetimeComponent>();
 	get_component_manager()->register_component<BoundingBoxComponent>();
+	get_component_manager()->register_component<EnemyComponent>();
+	get_component_manager()->register_component<DestructionNotificationComponent>();
 
 	_sprite_rendering_system = std::make_unique<SpriteRenderingSystem>(*get_sprite_renderer());
 	_gravity_system = std::make_unique<GravitySystem>();
@@ -21,6 +23,8 @@ Game::Game() : Application("Game", false, 1024, 768, 1)
 	_lifetime_system = std::make_unique<LifetimeSystem>();
 	_player_system = std::make_unique<PlayerSystem>(this);
 	_collision_system = std::make_unique<CollisionSystem>(this);
+	_enemy_spawning_system = std::make_unique<EnemySpawningSystem>(this);
+	_destruction_notification_system = std::make_unique<DestructionNotificationSystem>();
 
 	get_system_manager()->register_system<SpriteComponent, Transform2DComponent>(*_sprite_rendering_system);
 	get_system_manager()->register_system<RigidBody2DComponent, GravityComponent>(*_gravity_system);
@@ -28,6 +32,8 @@ Game::Game() : Application("Game", false, 1024, 768, 1)
 	get_system_manager()->register_system<LifetimeComponent>(*_lifetime_system);
 	get_system_manager()->register_system<GravityComponent, SpriteComponent, RigidBody2DComponent, Transform2DComponent>(*_player_system);
 	get_system_manager()->register_system<Transform2DComponent, BoundingBoxComponent>(*_collision_system);
+	get_system_manager()->register_system<EnemyComponent>(*_enemy_spawning_system);
+	get_system_manager()->register_system<DestructionNotificationComponent>(*_destruction_notification_system);
 
 	_player_system->initialize();
 

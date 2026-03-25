@@ -38,3 +38,12 @@ struct BoundingBoxComponent
 
 	std::function<void(Mage::Entity*, Mage::Entity*, const glm::vec2&)> on_collided = nullptr;
 };
+
+struct EnemyComponent
+{
+};
+
+struct DestructionNotificationComponent
+{
+	std::function<void()> on_destroyed = nullptr;
+};

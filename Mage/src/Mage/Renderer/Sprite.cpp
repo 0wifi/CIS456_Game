@@ -5,6 +5,7 @@ namespace Mage
 	struct Sprite::Impl
 	{
 		//Common to image vs just color
+		bool is_instanced = false;
 		uint_fast32_t width = 1;
 		uint_fast32_t height = 1;
 		GLuint        vao = 0;
@@ -44,6 +45,18 @@ namespace Mage
 			glBindVertexArray(0);
 		}
 	};
+
+	Sprite::Sprite(const Sprite* sprite)
+	{
+		if (sprite->is_textured())
+			LOG_E_INFO("Copying sprite instance %s", sprite->_impl->sprite_image_file.c_str());
+		else
+			LOG_E_INFO("Copying sprite instance");
+
+		_impl = new Impl();
+		*_impl = *sprite->_impl;
+		_impl->is_instanced = true;
+	}
 
 	Sprite::Sprite(const Color& color)
 	{
@@ -88,17 +101,33 @@ namespace Mage
 
 	Sprite::~Sprite()
 	{
-		if (_impl->is_textured)
+		if (!_impl->is_instanced)
 		{
-			LOG_E_INFO("Unloading sprite: '%s'", _impl->sprite_image_file.c_str());
-			glDeleteTextures(1, &_impl->texture_id);
+			if (_impl->is_textured)
+			{
+				LOG_E_INFO("Unloading sprite: '%s'", _impl->sprite_image_file.c_str());
+				glDeleteTextures(1, &_impl->texture_id);
+			}
+			else
+			{
+				LOG_E_INFO("Unloading sprite...");
+			}
+			glDeleteBuffers(1, &_impl->vbo);
+			glDeleteVertexArrays(1, &_impl->vao);
 		}
 		else
 		{
-			LOG_E_INFO("Unloading sprite...");
+			if (_impl->is_textured)
+			{
+				LOG_E_INFO("Unloading sprite instance: '%s'", _impl->sprite_image_file.c_str());
+			}
+			else
+			{
+				LOG_E_INFO("Unloading sprite instance...");
+			}
 		}
-		glDeleteBuffers(1, &_impl->vbo);
-		glDeleteVertexArrays(1, &_impl->vao);
+
+		delete _impl;
 	}
 
 	bool Sprite::is_textured() const

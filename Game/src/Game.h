@@ -8,7 +8,6 @@
 #include "MovementSystem.h"
 #include "PlayerSystem.h"
 #include "LifetimeSystem.h"
-#include "DeathByYSystem.h"
 #include "CollisionSystem.h"
 #include "DestructionNotificationSystem.h"
 #include "EnemySpawningSystem.h"
@@ -18,7 +17,8 @@ enum EntityTypes : uint_fast32_t
 {
 	PlayerEntity,
 	Platform,
-	Bullet
+	Bullet,
+	Enemy
 };
 
 class Game final : public Mage::Application
@@ -38,6 +38,8 @@ private:
 	std::unique_ptr<LifetimeSystem> _lifetime_system = nullptr;
 	std::unique_ptr<PlayerSystem> _player_system = nullptr;
 	std::unique_ptr<CollisionSystem> _collision_system = nullptr;
+	std::unique_ptr<EnemySpawningSystem> _enemy_spawning_system = nullptr;
+	std::unique_ptr<DestructionNotificationSystem> _destruction_notification_system = nullptr;
 
 	void add_platform(float pos_x, size_t units_wide);
 };

@@ -17,6 +17,8 @@
 #define VELOCITY_BULLET 1000.0f
 #define BULLET_REL_2_PLAYER_X 36.0f
 #define BULLET_REL_2_PLAYER_Y 27.0f
+#define BULLET_HALF_X 16.0f
+#define BULLET_HALF_Y 5.33f
 
 #define BBOX_RIGHT_FACING_CENTER_X_PLAYER 47.0f
 #define BBOX_LEFT_FACING_CENTER_X_PLAYER  77.0f
@@ -42,6 +44,9 @@ void PlayerSystem::update(Mage::ComponentManager& component_manager, float delta
 	auto s = component_manager.get_component<SpriteComponent>(*_player_entity);
 	auto t = component_manager.get_component<Transform2DComponent>(*_player_entity);
 	auto b = component_manager.get_component<BoundingBoxComponent>(*_player_entity);
+
+	if (t->translation.y < 0.0f - static_cast<float>(s->sprite->get_height()))
+		reset_player_entity();
 
 	_last_shot += delta_time;
 	if (_last_shot > DURATION_SHOOTING)
@@ -137,7 +142,7 @@ void PlayerSystem::reset_player_entity()
 	r->velocity = { 0.0f, 0.0f };
 	t->scale = { PLAYER_SCALE, PLAYER_SCALE };
 	t->translation = t->prev_translation = {
-		(static_cast<float>(_game->get_window()->get_width())
+		_game->get_camera()->left + (static_cast<float>(_game->get_window()->get_width())
 			- static_cast<float>(s->sprite->get_width()) * 0.25f) / 2.0f,
 		(static_cast<float>(_game->get_window()->get_height())
 			- static_cast<float>(s->sprite->get_height()) * 0.5f) / 2.0f
@@ -300,5 +305,18 @@ void PlayerSystem::add_bullet()
 							t->translation.y + BULLET_REL_2_PLAYER_Y},
 			.scale = {BULLET_SCALE, BULLET_SCALE}
 		});
+	_game->get_component_manager()->add_component<BoundingBoxComponent>(*e,
+		{
+			.center = {BULLET_HALF_X, BULLET_HALF_Y},
+			.half_size = {BULLET_HALF_X, BULLET_HALF_Y},
+			.on_collided = [&](Mage::Entity* e1, Mage::Entity* e2, const glm::vec2& ol )
+			{
+				e1->destroy();
 
+				if (e2->get_type() == EntityTypes::Enemy)
+				{
+					e2->destroy();
+				}
+			}
+		});
 }
