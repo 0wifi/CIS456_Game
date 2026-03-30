@@ -15,7 +15,7 @@
 #define BULLET_SCALE 0.33f
 #define BULLET_LIFETIME 1.0f
 #define VELOCITY_BULLET 1000.0f
-#define BULLET_REL_2_PLAYER_X 36.0f
+#define BULLET_REL_2_PLAYER_X 40.0f
 #define BULLET_REL_2_PLAYER_Y 27.0f
 #define BULLET_HALF_X 16.0f
 #define BULLET_HALF_Y 5.33f
@@ -29,6 +29,9 @@
 #define OFFSET_PLAYER_CENTER 24.0f
 
 #define SCROLL_MARGIN 0.33f
+
+#define ENEMY_EXPLOSION_SCALE 0.21f
+#define PLAYER_EXPLOSION_SCALE 0.5f
 
 PlayerSystem::PlayerSystem(Game* game)
 	: _game(game)
@@ -59,6 +62,10 @@ void PlayerSystem::update(Mage::ComponentManager& component_manager, float delta
 
 void PlayerSystem::initialize()
 {
+	_player_sprites["hero_dead"] = std::make_unique<Mage::Sprite>(
+		Mage::Color::custom(0.0f,0.0f,0.0f,0.0f));
+	_player_sprites["explosion"] = std::make_unique<Mage::Sprite>(
+		"res/sprites/explosion.png", 17, 0.05f);
 	_player_sprites["hero_idle"] = std::make_unique<Mage::Sprite>(
 		"res/sprites/hero_idle.png", 9, 0.15f);
 	_player_sprites["hero_run"] = std::make_unique<Mage::Sprite>(
@@ -93,40 +100,52 @@ void PlayerSystem::initialize()
 				collision_detected(other_entity, overlap);
 			}
 		});
-	
+
 	reset_player_entity();
 }
 
 void PlayerSystem::collision_detected(Mage::Entity* other_entity, const glm::vec2& overlap)
 {
-	auto oe_bb = _game->get_component_manager()->get_component<BoundingBoxComponent>(*other_entity);
-	auto oe_t  = _game->get_component_manager()->get_component<Transform2DComponent>(*other_entity);
+	auto t = _game->get_component_manager()->get_component<Transform2DComponent>(*_player_entity);
 
-	auto r  = _game->get_component_manager()->get_component<RigidBody2DComponent>(*_player_entity);
-	auto bb = _game->get_component_manager()->get_component<BoundingBoxComponent>(*_player_entity);
-	auto t  = _game->get_component_manager()->get_component<Transform2DComponent>(*_player_entity);
-
-	auto prev_overlap = CollisionSystem::calculate_overlap(t->prev_translation, t->scale, oe_t->translation, oe_t->scale, bb, oe_bb);
-
-	auto push_x = true;
-
-	if (prev_overlap.x > 0.0f)
-		push_x = false;
-	else if (prev_overlap.y < 0.0f)
-		push_x = overlap.x > overlap.y;
-
-	if (push_x && overlap.y > 0.1f)
+	if (other_entity->get_type() == EntityTypes::Enemy)
 	{
-		t->translation.x -= overlap.x;
-		r->velocity.x = 0.0f;
+		_wasd_states = 0;
+		_dead = true;
+		other_entity->destroy();
+		add_explosion(t->translation.x, t->translation.y, PLAYER_EXPLOSION_SCALE, PLAYER_EXPLOSION_SCALE,
+			[&]() {reset_player_entity();});
 	}
-	else if (overlap.x > 0.1f)
+	else
 	{
-		t->translation.y += overlap.y;
-		r->velocity.y = std::max(0.0f, r->velocity.y);
+		auto oe_bb = _game->get_component_manager()->get_component<BoundingBoxComponent>(*other_entity);
+		auto oe_t = _game->get_component_manager()->get_component<Transform2DComponent>(*other_entity);
 
-		if(r->velocity.y <= 0.1f)
-			_falling = false;
+		auto r = _game->get_component_manager()->get_component<RigidBody2DComponent>(*_player_entity);
+		auto bb = _game->get_component_manager()->get_component<BoundingBoxComponent>(*_player_entity);
+
+		auto prev_overlap = CollisionSystem::calculate_overlap(t->prev_translation, t->scale, oe_t->translation, oe_t->scale, bb, oe_bb);
+
+		auto push_x = true;
+
+		if (prev_overlap.x > 0.0f)
+			push_x = false;
+		else if (prev_overlap.y < 0.0f)
+			push_x = overlap.x > overlap.y;
+
+		if (push_x && overlap.y > 0.1f)
+		{
+			t->translation.x -= overlap.x;
+			r->velocity.x = 0.0f;
+		}
+		else if (overlap.x > 0.1f)
+		{
+			t->translation.y += overlap.y;
+			r->velocity.y = std::max(0.0f, r->velocity.y);
+
+			if (r->velocity.y <= 0.1f)
+				_falling = false;
+		}
 	}
 }
 
@@ -136,6 +155,9 @@ void PlayerSystem::reset_player_entity()
 	auto s = _game->get_component_manager()->get_component<SpriteComponent>(*_player_entity);
 	auto r = _game->get_component_manager()->get_component<RigidBody2DComponent>(*_player_entity);
 	auto t = _game->get_component_manager()->get_component<Transform2DComponent>(*_player_entity);
+
+	_dead = false;
+	//TODO: turn on rendering
 
 	g->force = { 0.0f, -1.0f * PLAYER_GRAVITY };
 	s->sprite = _player_sprites["hero_idle"].get();
@@ -184,7 +206,9 @@ void PlayerSystem::update_player_sprite(const RigidBody2DComponent* r, SpriteCom
 {
 	auto running = std::abs(r->velocity.x) > 0.1f;
 
-	if (_jumping)
+	if (_dead)
+		s->sprite = _player_sprites["hero_dead"].get();
+	else if (_jumping)
 		s->sprite = _player_sprites["hero_jump"].get();
 	else if (_falling && _shooting)
 		s->sprite = _player_sprites["hero_fall_shoot"].get();
@@ -231,6 +255,9 @@ void PlayerSystem::update_camera(const RigidBody2DComponent* r, const SpriteComp
 
 void PlayerSystem::on_key_down(Mage::Key key, uint_fast16_t key_modifiers, uint_fast8_t repeat_count)
 {
+	if(_dead)
+		return;
+
 	if (repeat_count > 0)
 		return;
 	_wasd_states |= (key == Mage::Key::W) ? 0x01 : 0;
@@ -252,6 +279,9 @@ void PlayerSystem::on_key_down(Mage::Key key, uint_fast16_t key_modifiers, uint_
 
 void PlayerSystem::on_key_up(Mage::Key key, uint_fast16_t key_modifiers)
 {
+	if(_dead)
+		return;
+
 	_wasd_states &= (key == Mage::Key::W) ? ~0x01 : 0xFF;
 	_wasd_states &= (key == Mage::Key::S) ? ~0x02 : 0xFF;
 	_wasd_states &= (key == Mage::Key::A) ? ~0x04 : 0xFF;
@@ -284,7 +314,7 @@ void PlayerSystem::shoot()
 void PlayerSystem::add_bullet()
 {
 	auto t = _game->get_component_manager()->get_component<Transform2DComponent>(*_player_entity);
-	
+
 	auto bullet_dir = _left_facing ? -1.0f : 1.0f;
 	auto e = _game->get_entity_manager()->add_entity(EntityTypes::Bullet);
 	_game->get_component_manager()->add_component<SpriteComponent>(*e,
@@ -309,14 +339,37 @@ void PlayerSystem::add_bullet()
 		{
 			.center = {BULLET_HALF_X, BULLET_HALF_Y},
 			.half_size = {BULLET_HALF_X, BULLET_HALF_Y},
-			.on_collided = [&](Mage::Entity* e1, Mage::Entity* e2, const glm::vec2& ol )
+			.on_collided = [&](Mage::Entity* e1, Mage::Entity* e2, const glm::vec2& ol)
 			{
 				e1->destroy();
 
 				if (e2->get_type() == EntityTypes::Enemy)
 				{
+					auto ept = _game->get_component_manager()->get_component<Transform2DComponent>(*e2);
 					e2->destroy();
+					add_explosion(ept->translation.x, ept->translation.y, ENEMY_EXPLOSION_SCALE, ENEMY_EXPLOSION_SCALE);
 				}
 			}
 		});
+}
+
+void PlayerSystem::add_explosion(float x, float y, float scale_x, float scale_y, const std::function<void()>& after_explosion)
+{
+	auto ep = _game->get_entity_manager()->add_entity(EntityTypes::Explosion);
+
+	_game->get_component_manager()->add_component<LifetimeComponent>(*ep,
+		{
+			.remaining = 0.85f,
+			.on_destroyed = after_explosion
+		});
+	_game->get_component_manager()->add_component<SpriteComponent>(*ep,
+		{
+			.sprite = _player_sprites["explosion"].get()
+		});
+	_game->get_component_manager()->add_component<Transform2DComponent>(*ep,
+		{
+			.translation = {x, y},
+			.scale = {scale_x, scale_y}
+		});
+	_player_sprites["explosion"]->start_over();
 }

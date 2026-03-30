@@ -18,7 +18,8 @@ enum EntityTypes : uint_fast32_t
 	PlayerEntity,
 	Platform,
 	Bullet,
-	Enemy
+	Enemy,
+	Explosion
 };
 
 class Game final : public Mage::Application

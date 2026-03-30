@@ -40,6 +40,8 @@ private:
 	bool _shooting = false;
 	float _last_shot = 0.0f;
 
+	bool _dead = false;
+
 	void collision_detected(Mage::Entity* other_entity, const glm::vec2& overlap);
 
 	void reset_player_entity();
@@ -55,4 +57,6 @@ private:
 
 	void add_bullet();
 
+	void add_explosion(float x, float y, float scale_x, float scale_y,
+		const std::function<void()>& after_explosion = nullptr);
 };

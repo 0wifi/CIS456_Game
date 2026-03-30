@@ -24,7 +24,9 @@ public:
 
 			auto s = component_manager.get_component<SpriteComponent>(*e);
 			auto t = component_manager.get_component<Transform2DComponent>(*e);
-			_sprite_renderer->render(*s->sprite, t->translation, t->scale, t->rotation, delta_time);
+
+			if (s->sprite != nullptr)
+				_sprite_renderer->render(*s->sprite, t->translation, t->scale, t->rotation, delta_time);
 		}
 	}
 };
