@@ -39,6 +39,9 @@ PlayerSystem::PlayerSystem(Game* game)
 	_game->get_event_manager()->add_on_mouse_button_down_event_listener(this);
 	_game->get_event_manager()->add_on_key_down_event_listener(this);
 	_game->get_event_manager()->add_on_key_up_event_listener(this);
+	_game->get_event_manager()->add_on_controller_axis_motion_event_listener(this);
+	_game->get_event_manager()->add_on_controller_button_down_event_listener(this);
+	_game->get_event_manager()->add_on_controller_button_up_event_listener(this);
 }
 
 void PlayerSystem::update(Mage::ComponentManager& component_manager, float delta_time)
@@ -49,7 +52,11 @@ void PlayerSystem::update(Mage::ComponentManager& component_manager, float delta
 	auto b = component_manager.get_component<BoundingBoxComponent>(*_player_entity);
 
 	if (t->translation.y < 0.0f - static_cast<float>(s->sprite->get_height()))
+	{
+		die();
+		//TODO: delay this
 		reset_player_entity();
+	}
 
 	_last_shot += delta_time;
 	if (_last_shot > DURATION_SHOOTING)
@@ -62,6 +69,16 @@ void PlayerSystem::update(Mage::ComponentManager& component_manager, float delta
 
 void PlayerSystem::initialize()
 {
+	if (Mage::Controller::get_controller_count() > 0)
+	{
+		_controller = std::make_unique<Mage::Controller>(0);
+		LOG_INFO("Game controller detected; Axes: %d; Buttons: %d; Rumble: %d; Accelerometer: %d; Gyroscope: %d",
+			_controller->get_number_of_axes(), _controller->get_number_of_buttons(),
+			_controller->has_rumble() ? "Yes" : "No",
+			_controller->has_accelerometer() ? "Yes" : "No",
+			_controller->has_gyroscope() ? "Yes" : "No");
+	}
+
 	_player_sprites["hero_dead"] = std::make_unique<Mage::Sprite>(
 		Mage::Color::custom(0.0f,0.0f,0.0f,0.0f));
 	_player_sprites["explosion"] = std::make_unique<Mage::Sprite>(
@@ -110,8 +127,7 @@ void PlayerSystem::collision_detected(Mage::Entity* other_entity, const glm::vec
 
 	if (other_entity->get_type() == EntityTypes::Enemy)
 	{
-		_wasd_states = 0;
-		_dead = true;
+		die();
 		other_entity->destroy();
 		add_explosion(t->translation.x, t->translation.y, PLAYER_EXPLOSION_SCALE, PLAYER_EXPLOSION_SCALE,
 			[&]() {reset_player_entity();});
@@ -191,6 +207,10 @@ void PlayerSystem::update_player_velocity(RigidBody2DComponent* r, float delta_t
 	r->velocity.x = 0;
 	if (_wasd_states & 0x04) r->velocity.x += -1.0f;
 	if (_wasd_states & 0x08) r->velocity.x += 1.0f;
+
+	r->velocity.x += _controller_x_axis_value;
+
+	r->velocity.x = std::clamp(r->velocity.x, -1.0f, 1.0f);
 
 	auto velocity_factor = 1.0f;
 
@@ -297,6 +317,43 @@ void PlayerSystem::on_mouse_button_down(Mage::MouseButton button, float x, float
 	reset_player_entity();
 }
 
+void PlayerSystem::on_controller_axis_motion(int_fast32_t controller_id, uint_fast32_t axis_id, float axis_value)
+{
+	if (axis_id == 1)
+		_controller_y_axis_value = -axis_value;
+	if (axis_id == 0)
+		_controller_x_axis_value = axis_value;
+}
+
+void PlayerSystem::on_controller_button_down(int_fast32_t controller_id, uint_fast8_t button_id)
+{
+	LOG_INFO("Game controller button down; controller id: %d; button id: %d", controller_id, button_id);
+
+	if (_dead)
+		return;
+
+	if (button_id == 0 && !_jumping)
+	{
+		shoot();
+	}
+	else if (button_id == 1 && !(_jumping || _falling))
+	{
+		_jump_button_down_at = std::chrono::system_clock::now();
+		jump();
+	}
+}
+
+void PlayerSystem::on_controller_button_up(int_fast32_t controller_id, uint_fast8_t button_id)
+{
+	if (_dead)
+		return;
+
+	if (button_id == 1)
+		_jump_button_up_at = std::chrono::system_clock::now();
+}
+
+
+
 void PlayerSystem::jump()
 {
 	_jumping = true;
@@ -309,6 +366,15 @@ void PlayerSystem::shoot()
 	_shooting = true;
 	_last_shot = 0.0f;
 	add_bullet();
+}
+
+void PlayerSystem::die()
+{
+	_wasd_states = 0;
+	_dead = true;
+
+	if (_controller != nullptr)
+		_controller->rumble(100, 0, 0xFFFF);
 }
 
 void PlayerSystem::add_bullet()

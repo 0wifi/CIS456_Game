@@ -9,7 +9,10 @@ class PlayerSystem final :
 	public Mage::System,
 	public Mage::OnMouseButtonDownEventListener,
 	public Mage::OnKeyDownEventListener,
-	public Mage::OnKeyUpEventListener
+	public Mage::OnKeyUpEventListener,
+	public Mage::OnControllerAxisMotionEventListener,
+	public Mage::OnControllerButtonDownEventListener,
+	public Mage::OnControllerButtonUpEventListener
 {
 public:
 	explicit PlayerSystem(Game* game);
@@ -18,16 +21,25 @@ public:
 
 	void update(Mage::ComponentManager& component_manager, float delta_time) override;
 
-	void on_mouse_button_down(Mage::MouseButton button, float x, float y, uint8_t click_count) override;
+	void initialize();
 
 	void on_key_down(Mage::Key key, uint_fast16_t key_modifiers, uint_fast8_t repeat_count) override;
 	void on_key_up(Mage::Key key, uint_fast16_t key_modifiers) override;
 
-	void initialize();
+	void on_mouse_button_down(Mage::MouseButton button, float x, float y, uint8_t click_count) override;
+
+	void on_controller_axis_motion(int_fast32_t controller_id, uint_fast32_t axis_id, float axis_value) override;
+	void on_controller_button_down(int_fast32_t controller_id, uint_fast8_t button_id) override;
+	void on_controller_button_up(int_fast32_t controller_id, uint_fast8_t button_id) override;
 
 private:
 	Game* _game = nullptr;
 	Mage::Entity* _player_entity = nullptr;
+
+	std::unique_ptr<Mage::Controller> _controller = nullptr;
+	float _controller_x_axis_value = 0.0f;
+	float _controller_y_axis_value = 0.0f;
+
 	std::map<std::string, std::unique_ptr<Mage::Sprite>> _player_sprites;
 	bool _left_facing = false;
 	uint_fast8_t _wasd_states = 0;
@@ -55,8 +67,11 @@ private:
 	void jump();
 	void shoot();
 
+	void die();
+
 	void add_bullet();
 
 	void add_explosion(float x, float y, float scale_x, float scale_y,
 		const std::function<void()>& after_explosion = nullptr);
+
 };
