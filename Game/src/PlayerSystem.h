@@ -69,9 +69,10 @@ private:
 
 	void die();
 
+	std::atomic<bool> _revive = false;
+
 	void add_bullet();
 
-	void add_explosion(float x, float y, float scale_x, float scale_y,
-		const std::function<void()>& after_explosion = nullptr);
+	void add_explosion(float x, float y, float scale_x, float scale_y);
 
 };

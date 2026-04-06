@@ -46,16 +46,18 @@ PlayerSystem::PlayerSystem(Game* game)
 
 void PlayerSystem::update(Mage::ComponentManager& component_manager, float delta_time)
 {
+	if (_revive.load())
+		reset_player_entity();
+
 	auto r = component_manager.get_component<RigidBody2DComponent>(*_player_entity);
 	auto s = component_manager.get_component<SpriteComponent>(*_player_entity);
 	auto t = component_manager.get_component<Transform2DComponent>(*_player_entity);
 	auto b = component_manager.get_component<BoundingBoxComponent>(*_player_entity);
 
-	if (t->translation.y < 0.0f - static_cast<float>(s->sprite->get_height()))
+	if (!_dead
+	 && t->translation.y < 0.0f - static_cast<float>(s->sprite->get_height()))
 	{
 		die();
-		//TODO: delay this
-		reset_player_entity();
 	}
 
 	_last_shot += delta_time;
@@ -129,8 +131,7 @@ void PlayerSystem::collision_detected(Mage::Entity* other_entity, const glm::vec
 	{
 		die();
 		other_entity->destroy();
-		add_explosion(t->translation.x, t->translation.y, PLAYER_EXPLOSION_SCALE, PLAYER_EXPLOSION_SCALE,
-			[&]() {reset_player_entity();});
+		add_explosion(t->translation.x, t->translation.y, PLAYER_EXPLOSION_SCALE, PLAYER_EXPLOSION_SCALE);
 	}
 	else
 	{
@@ -173,7 +174,7 @@ void PlayerSystem::reset_player_entity()
 	auto t = _game->get_component_manager()->get_component<Transform2DComponent>(*_player_entity);
 
 	_dead = false;
-	//TODO: turn on rendering
+	_revive.store(false);
 
 	g->force = { 0.0f, -1.0f * PLAYER_GRAVITY };
 	s->sprite = _player_sprites["hero_idle"].get();
@@ -189,6 +190,8 @@ void PlayerSystem::reset_player_entity()
 
 void PlayerSystem::update_player_velocity(RigidBody2DComponent* r, float delta_time)
 {
+	if(_dead)
+		return;
 
 	_last_jump += delta_time;
 	if (_jumping && _last_jump > DURATION_JUMPING)
@@ -275,8 +278,6 @@ void PlayerSystem::update_camera(const RigidBody2DComponent* r, const SpriteComp
 
 void PlayerSystem::on_key_down(Mage::Key key, uint_fast16_t key_modifiers, uint_fast8_t repeat_count)
 {
-	if(_dead)
-		return;
 
 	if (repeat_count > 0)
 		return;
@@ -299,9 +300,6 @@ void PlayerSystem::on_key_down(Mage::Key key, uint_fast16_t key_modifiers, uint_
 
 void PlayerSystem::on_key_up(Mage::Key key, uint_fast16_t key_modifiers)
 {
-	if(_dead)
-		return;
-
 	_wasd_states &= (key == Mage::Key::W) ? ~0x01 : 0xFF;
 	_wasd_states &= (key == Mage::Key::S) ? ~0x02 : 0xFF;
 	_wasd_states &= (key == Mage::Key::A) ? ~0x04 : 0xFF;
@@ -329,9 +327,6 @@ void PlayerSystem::on_controller_button_down(int_fast32_t controller_id, uint_fa
 {
 	LOG_INFO("Game controller button down; controller id: %d; button id: %d", controller_id, button_id);
 
-	if (_dead)
-		return;
-
 	if (button_id == 0 && !_jumping)
 	{
 		shoot();
@@ -345,9 +340,6 @@ void PlayerSystem::on_controller_button_down(int_fast32_t controller_id, uint_fa
 
 void PlayerSystem::on_controller_button_up(int_fast32_t controller_id, uint_fast8_t button_id)
 {
-	if (_dead)
-		return;
-
 	if (button_id == 1)
 		_jump_button_up_at = std::chrono::system_clock::now();
 }
@@ -370,11 +362,17 @@ void PlayerSystem::shoot()
 
 void PlayerSystem::die()
 {
-	_wasd_states = 0;
+	//_wasd_states = 0;
 	_dead = true;
 
 	if (_controller != nullptr)
-		_controller->rumble(100, 0, 0xFFFF);
+		_controller->rumble(333, 0, 0xFFFF);
+
+	std::thread thread([&] {
+		std::this_thread::sleep_for(std::chrono::milliseconds(333));
+		_revive.store(true);
+		});
+	thread.detach();
 }
 
 void PlayerSystem::add_bullet()
@@ -419,14 +417,13 @@ void PlayerSystem::add_bullet()
 		});
 }
 
-void PlayerSystem::add_explosion(float x, float y, float scale_x, float scale_y, const std::function<void()>& after_explosion)
+void PlayerSystem::add_explosion(float x, float y, float scale_x, float scale_y)
 {
 	auto ep = _game->get_entity_manager()->add_entity(EntityTypes::Explosion);
 
 	_game->get_component_manager()->add_component<LifetimeComponent>(*ep,
 		{
-			.remaining = 0.85f,
-			.on_destroyed = after_explosion
+			.remaining = 0.85f
 		});
 	_game->get_component_manager()->add_component<SpriteComponent>(*ep,
 		{
