@@ -408,11 +408,7 @@ void PlayerSystem::add_bullet()
 				e1->destroy();
 
 				if (e2->get_type() == EntityTypes::Enemy)
-				{
-					auto ept = _game->get_component_manager()->get_component<Transform2DComponent>(*e2);
-					e2->destroy();
-					add_explosion(ept->translation.x, ept->translation.y, ENEMY_EXPLOSION_SCALE, ENEMY_EXPLOSION_SCALE);
-				}
+					kill_enemy(e2);
 			}
 		});
 }
@@ -435,4 +431,28 @@ void PlayerSystem::add_explosion(float x, float y, float scale_x, float scale_y)
 			.scale = {scale_x, scale_y}
 		});
 	_player_sprites["explosion"]->start_over();
+}
+
+void PlayerSystem::kill_enemy(Mage::Entity* enemy)
+{
+	auto ept = _game->get_component_manager()->get_component<Transform2DComponent>(*enemy);
+	enemy->destroy();
+	add_explosion(ept->translation.x, ept->translation.y, ENEMY_EXPLOSION_SCALE, ENEMY_EXPLOSION_SCALE);
+
+	const auto msg = "+10";
+	auto msg_width = _game->get_font()->measure_text(msg, 1.0f);
+
+	auto pts = _game->get_entity_manager()->add_entity(EntityTypes::EnemyPointsText);
+	_game->get_component_manager()->add_component<EnemyPointsTextComponent>(*pts,
+		{
+			.msg = msg
+		});
+	_game->get_component_manager()->add_component<Transform2DComponent>(*pts,
+		{
+			.translation = {ept->translation.x, ept->translation.y}
+		});
+	_game->get_component_manager()->add_component<RigidBody2DComponent>(*pts,
+		{
+			.velocity = {0.0f, -100.0f}
+		});
 }

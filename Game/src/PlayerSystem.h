@@ -75,4 +75,5 @@ private:
 
 	void add_explosion(float x, float y, float scale_x, float scale_y);
 
+	void kill_enemy(Mage::Entity* enemy);
 };

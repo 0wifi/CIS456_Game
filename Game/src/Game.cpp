@@ -16,6 +16,7 @@ Game::Game() : Application("Game", false, 1024, 768, 1)
 	get_component_manager()->register_component<BoundingBoxComponent>();
 	get_component_manager()->register_component<EnemyComponent>();
 	get_component_manager()->register_component<DestructionNotificationComponent>();
+	get_component_manager()->register_component<EnemyPointsTextComponent>();
 
 	_sprite_rendering_system = std::make_unique<SpriteRenderingSystem>(*get_sprite_renderer());
 	_gravity_system = std::make_unique<GravitySystem>();
@@ -25,6 +26,7 @@ Game::Game() : Application("Game", false, 1024, 768, 1)
 	_collision_system = std::make_unique<CollisionSystem>(this);
 	_enemy_spawning_system = std::make_unique<EnemySpawningSystem>(this);
 	_destruction_notification_system = std::make_unique<DestructionNotificationSystem>();
+	_enemy_points_text_system = std::make_unique<EnemyPointsTextSystem>(this);
 
 	get_system_manager()->register_system<SpriteComponent, Transform2DComponent>(*_sprite_rendering_system);
 	get_system_manager()->register_system<RigidBody2DComponent, GravityComponent>(*_gravity_system);
@@ -34,8 +36,11 @@ Game::Game() : Application("Game", false, 1024, 768, 1)
 	get_system_manager()->register_system<Transform2DComponent, BoundingBoxComponent>(*_collision_system);
 	get_system_manager()->register_system<EnemyComponent>(*_enemy_spawning_system);
 	get_system_manager()->register_system<DestructionNotificationComponent>(*_destruction_notification_system);
+	get_system_manager()->register_system<EnemyPointsTextComponent>(*_enemy_points_text_system);
 
 	_player_system->initialize();
+
+	_font = std::make_unique<Mage::Font>("res/fonts/OpenSans-Regular.ttf", 48);
 
 	Rand::add_uniform_real_distribution("rotation", -90.0f, 90.0f);
 	Rand::add_uniform_real_distribution("scale_x", 10.0f, 50.0f);
@@ -111,6 +116,11 @@ Game::Game() : Application("Game", false, 1024, 768, 1)
 void Game::on_app_closing()
 {
 	close();
+}
+
+Mage::Font* Game::get_font() const
+{
+	return _font.get();
 }
 
 void Game::add_platform(float pos_x, size_t units_wide)

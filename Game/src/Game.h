@@ -12,6 +12,7 @@
 #include "DestructionNotificationSystem.h"
 #include "EnemySpawningSystem.h"
 #include "SpriteRenderingSystem.h"
+#include "EnemyPointsTextSystem.h"
 
 enum EntityTypes : uint_fast32_t
 {
@@ -19,7 +20,8 @@ enum EntityTypes : uint_fast32_t
 	Platform,
 	Bullet,
 	Enemy,
-	Explosion
+	Explosion,
+	EnemyPointsText
 };
 
 class Game final : public Mage::Application
@@ -31,6 +33,8 @@ public:
 	~Game() override = default;
 
 	void on_app_closing() override;
+
+	Mage::Font* get_font() const;
 private:
 	std::map<std::string, std::unique_ptr<Mage::Sprite>> _sprites;
 	std::unique_ptr<SpriteRenderingSystem> _sprite_rendering_system = nullptr;
@@ -41,6 +45,8 @@ private:
 	std::unique_ptr<CollisionSystem> _collision_system = nullptr;
 	std::unique_ptr<EnemySpawningSystem> _enemy_spawning_system = nullptr;
 	std::unique_ptr<DestructionNotificationSystem> _destruction_notification_system = nullptr;
+	std::unique_ptr<EnemyPointsTextSystem> _enemy_points_text_system = nullptr;
+	std::unique_ptr<Mage::Font> _font = nullptr;
 
 	void add_platform(float pos_x, size_t units_wide);
 };

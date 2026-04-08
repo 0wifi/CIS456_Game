@@ -43,6 +43,11 @@ struct EnemyComponent
 {
 };
 
+struct EnemyPointsTextComponent
+{
+	std::string msg;
+};
+
 struct DestructionNotificationComponent
 {
 	std::function<void()> on_destroyed = nullptr;
