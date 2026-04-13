@@ -46,6 +46,8 @@ struct EnemyComponent
 struct EnemyPointsTextComponent
 {
 	std::string msg;
+	float msg_scale = 1.0f;
+	float current_alpha = 1.0f;
 };
 
 struct DestructionNotificationComponent

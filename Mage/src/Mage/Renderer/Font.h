@@ -16,8 +16,8 @@ namespace Mage {
         uint_fast32_t get_glyph_size_x( unsigned char glyph ) const ;
         uint_fast32_t get_glyph_size_y( unsigned char glyph ) const ;
 
-        uint_fast32_t get_glyph_bearing_x( unsigned char glyph ) const ;
-        uint_fast32_t get_glyph_bearing_y( unsigned char glyph ) const ;
+        int_fast32_t get_glyph_bearing_x( unsigned char glyph ) const ;
+        int_fast32_t get_glyph_bearing_y( unsigned char glyph ) const ;
 
         uint_fast32_t get_glyph_advance( unsigned char glyph ) const ;
 

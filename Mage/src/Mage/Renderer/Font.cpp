@@ -147,12 +147,12 @@ namespace Mage {
         return _impl->characters[ glyph ].size.y ;
     }
 
-    uint_fast32_t Font::get_glyph_bearing_x( unsigned char glyph ) const
+    int_fast32_t Font::get_glyph_bearing_x( unsigned char glyph ) const
     {
         return _impl->characters[ glyph ].bearing.x ;
     }
 
-    uint32_t Font::get_glyph_bearing_y( unsigned char glyph ) const
+    int_fast32_t Font::get_glyph_bearing_y( unsigned char glyph ) const
     {
         return _impl->characters[ glyph ].bearing.y ;
     }

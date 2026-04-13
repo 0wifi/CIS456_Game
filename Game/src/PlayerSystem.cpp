@@ -152,7 +152,7 @@ void PlayerSystem::collision_detected(Mage::Entity* other_entity, const glm::vec
 
 		if (push_x && overlap.y > 0.1f)
 		{
-			t->translation.x -= overlap.x;
+			t->translation.x -= t->prev_translation.x;
 			r->velocity.x = 0.0f;
 		}
 		else if (overlap.x > 0.1f)
@@ -453,6 +453,10 @@ void PlayerSystem::kill_enemy(Mage::Entity* enemy)
 		});
 	_game->get_component_manager()->add_component<RigidBody2DComponent>(*pts,
 		{
-			.velocity = {0.0f, -100.0f}
+			.velocity = {0.0f, 100.0f}
+		});
+	_game->get_component_manager()->add_component<LifetimeComponent>(*pts,
+		{
+			.remaining = 2.0f
 		});
 }
