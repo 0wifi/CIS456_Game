@@ -2,7 +2,7 @@
 #include "Components.h"
 #include "Rand.h"
 
-Game::Game() : Application("Game", false, 1024, 768, 0)
+Game::Game() : Application("Game", false, 1024, 768, 1)
 {
 	Mage::Log::get().set_engine_log_level(Mage::Log::Level::Debug);
 

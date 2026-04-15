@@ -26,9 +26,8 @@ glm::vec2 CollisionSystem::calculate_overlap(const glm::vec2& translation_a, con
 
 void CollisionSystem::update(Mage::ComponentManager& component_manager, float delta_time)
 {
-	auto entities = get_entities();
 	//for (auto e1 : get_entities())
-	for (auto it1 = entities.begin(); it1 != entities.end(); ++it1)
+	for (auto it1 = get_entities().begin(); it1 != get_entities().end(); ++it1)
 	{
 		auto e1 = *it1;
 
@@ -36,11 +35,11 @@ void CollisionSystem::update(Mage::ComponentManager& component_manager, float de
 			continue;
 		
 		//for (auto e2 : get_entities())
-		for (auto it2 = std::next(it1); it2 != entities.end(); ++it2)
+		for (auto it2 = std::next(it1); it2 != get_entities().end(); ++it2)
 		{
 			auto e2 = *it2;
 
-			if (e2->is_destroyed())
+			if (e2->is_destroyed() || e1->get_id() == e2->get_id())
 				continue;
 
 			auto bb1 = component_manager.get_component<BoundingBoxComponent>(*e1);

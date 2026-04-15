@@ -1,22 +1,21 @@
 cmake_minimum_required( VERSION 3.8 )
 
 # --- Configuration ---
-set( PROJECT_NAME_STR "Game" )
+set( PROJECT_NAME_STR "Game2" )
 # ---------------------
 
 if( CMAKE_BUILD_TYPE STREQUAL "Release" )
     # set( EXECUTABLE_TYPE_WIN32 WIN32 )
-endif() 
+endif()
 
 add_executable(
     ${PROJECT_NAME_STR} ${EXECUTABLE_TYPE_WIN32}
     "src/main.cpp"
-    "src/Game.cpp"
+	"src/Game.cpp"
     "src/PlayerSystem.cpp"
     "src/CollisionSystem.cpp"
     "src/EnemySpawningSystem.cpp"
     "src/EnemyPointsTextSystem.cpp"
-    # OTHER SOURCE FILES HERE
 )
 
 setup_force_build( ${PROJECT_NAME_STR} "src/main.cpp")
@@ -36,5 +35,5 @@ add_custom_command( TARGET ${PROJECT_NAME_STR} POST_BUILD
 # This copies the resources (res) directory from the game source to the game binary output directory.
 add_custom_command( TARGET ${PROJECT_NAME_STR} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/res ${CMAKE_CURRENT_BINARY_DIR}/res
-    COMMAND_EXPAND_LISTS
+    COMMAND_EXPAND_LISTS 
 )

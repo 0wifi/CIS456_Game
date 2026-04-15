@@ -15,8 +15,7 @@
 #define BULLET_SCALE 0.33f
 #define BULLET_LIFETIME 1.0f
 #define VELOCITY_BULLET 1000.0f
-#define BULLET_REL_X_LEFT_FACING 15.0f
-#define BULLET_REL_X_RIGHT_FACING 40.0f
+#define BULLET_REL_X_LEFT_FACING 40.0f
 #define BULLET_REL_2_PLAYER_Y 27.0f
 #define BULLET_HALF_X 16.0f
 #define BULLET_HALF_Y 5.33f
@@ -396,7 +395,7 @@ void PlayerSystem::add_bullet()
 		});
 	_game->get_component_manager()->add_component<Transform2DComponent>(*e,
 		{
-			.translation = {t->translation.x + (_left_facing ? BULLET_REL_X_LEFT_FACING : BULLET_REL_X_RIGHT_FACING),
+			.translation = {t->translation.x + (BULLET_REL_X_LEFT_FACING * bullet_dir),
 							t->translation.y + BULLET_REL_2_PLAYER_Y},
 			.scale = {BULLET_SCALE, BULLET_SCALE}
 		});
@@ -406,8 +405,7 @@ void PlayerSystem::add_bullet()
 			.half_size = {BULLET_HALF_X, BULLET_HALF_Y},
 			.on_collided = [&](Mage::Entity* e1, Mage::Entity* e2, const glm::vec2& ol)
 			{
-				if (e2->get_type() != EntityTypes::PlayerEntity)
-					e1->destroy();
+				e1->destroy();
 
 				if (e2->get_type() == EntityTypes::Enemy)
 					kill_enemy(e2);
